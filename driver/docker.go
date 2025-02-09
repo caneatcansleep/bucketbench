@@ -81,20 +81,20 @@ func (d *DockerDriver) Path() string {
 }
 
 // Create will pull and create a container instance matching the specific needs of a driver
-func (d *DockerDriver) Create(ctx context.Context, name, image, cmdOverride string, detached bool, trace bool) (Container, error) {
+func (d *DockerDriver) Create(ctx context.Context, name, image, cmdOverride string, detached bool, trace bool) (Container, time.Duration, error) {
 	// Make sure the Docker image is available locally
 	images, err := d.client.ImageList(ctx, types.ImageListOptions{
 		Filters: filters.NewArgs(filters.Arg("reference", image)),
 	})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to query image list")
+		return nil, 0, errors.Wrap(err, "failed to query image list")
 	}
 
 	if len(images) == 0 {
 		reader, err := d.client.ImagePull(ctx, image, types.ImagePullOptions{})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to pull image: '%s'", image)
+			return nil, 0, errors.Wrapf(err, "failed to pull image: '%s'", image)
 		}
 
 		defer reader.Close()
@@ -103,7 +103,7 @@ func (d *DockerDriver) Create(ctx context.Context, name, image, cmdOverride stri
 		io.Copy(io.Discard, reader)
 	}
 
-	return newDockerContainer(name, image, cmdOverride, detached, trace), nil
+	return newDockerContainer(name, image, cmdOverride, detached, trace), 0, nil
 }
 
 // Clean removes used Docker containers

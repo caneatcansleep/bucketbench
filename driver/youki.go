@@ -149,8 +149,8 @@ func (r *YoukiDriver) Info(ctx context.Context) (string, error) {
 
 // Create will create a container instance matching the specific needs
 // of a driver
-func (r *YoukiDriver) Create(_ context.Context, name, image, _ string, _ bool, _ bool) (Container, error) {
-	return newYoukiContainer(name, image, false, false), nil
+func (r *YoukiDriver) Create(_ context.Context, name, image, _ string, _ bool, _ bool) (Container, time.Duration, error) {
+	return newYoukiContainer(name, image, false, false), 0, nil
 }
 
 // Clean will clean the environment; removing any remaining containers in the youki metadata

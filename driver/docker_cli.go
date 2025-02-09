@@ -162,8 +162,8 @@ func (d *DockerCLIDriver) Info(ctx context.Context) (string, error) {
 
 // Create will create a container instance matching the specific needs
 // of a driver
-func (d *DockerCLIDriver) Create(_ context.Context, name, image, cmdOverride string, detached bool, trace bool) (Container, error) {
-	return newDockerContainer(name, image, cmdOverride, detached, trace), nil
+func (d *DockerCLIDriver) Create(_ context.Context, name, image, cmdOverride string, detached bool, trace bool) (Container, time.Duration, error) {
+	return newDockerContainer(name, image, cmdOverride, detached, trace), 0, nil
 }
 
 // Clean will clean the environment; removing any exited containers

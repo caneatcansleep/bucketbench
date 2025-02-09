@@ -149,8 +149,8 @@ func (r *RuncDriver) Info(ctx context.Context) (string, error) {
 
 // Create will create a container instance matching the specific needs
 // of a driver
-func (r *RuncDriver) Create(_ context.Context, name, image, _ string, detached bool, trace bool) (Container, error) {
-	return newRuncContainer(name, image, detached, trace), nil
+func (r *RuncDriver) Create(_ context.Context, name, image, _ string, detached bool, trace bool) (Container, time.Duration, error) {
+	return newRuncContainer(name, image, detached, trace), 0, nil
 }
 
 // Clean will clean the environment; removing any remaining containers in the runc metadata

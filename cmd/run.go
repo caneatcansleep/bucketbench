@@ -290,7 +290,7 @@ func outputRunDetails(maxThreads int, results []benchResult, overhead bool, lega
 	w.Flush()
 	fmt.Println("")
 
-	cmdList := []string{"run", "pause", "resume", "stop", "delete"}
+	cmdList := []string{"run", "pause", "resume", "stop", "delete", "create"}
 	fmt.Printf("DETAILED COMMAND TIMINGS/STATISTICS\n")
 	// output per-command timings across the runs as well
 	for _, result := range results {

@@ -149,8 +149,8 @@ func (r *CRunDriver) Info(ctx context.Context) (string, error) {
 
 // Create will create a container instance matching the specific needs
 // of a driver
-func (r *CRunDriver) Create(_ context.Context, name, image, _ string, detached bool, _ bool) (Container, error) {
-	return newCRunContainer(name, image, detached, false), nil
+func (r *CRunDriver) Create(_ context.Context, name, image, _ string, detached bool, _ bool) (Container, time.Duration, error) {
+	return newCRunContainer(name, image, detached, false), 0, nil
 }
 
 // Clean will clean the environment; removing any remaining containers in the crun metadata

@@ -49,12 +49,6 @@ func (cb *CustomBench) Init(ctx context.Context, name string, driverType driver.
 
 	log.Infof("driver initialized: %s", info)
 
-	// prepare environment
-	err = driver.Clean(ctx)
-	if err != nil {
-		return fmt.Errorf("error during driver init cleanup: %v", err)
-	}
-
 	cb.benchName = name
 	cb.imageInfo = imageInfo
 	cb.cmdOverride = cmdOverride
@@ -66,7 +60,7 @@ func (cb *CustomBench) Init(ctx context.Context, name string, driverType driver.
 // Validate the unit of benchmark execution (create-run-stop-remove) against
 // the initialized driver.
 func (cb *CustomBench) Validate(ctx context.Context) error {
-	ctr, err := cb.driver.Create(ctx, "bb-test", cb.imageInfo, cb.cmdOverride, true, cb.trace)
+	ctr, _, err := cb.driver.Create(ctx, "bb-test", cb.imageInfo, cb.cmdOverride, true, cb.trace)
 	if err != nil {
 		return fmt.Errorf("Driver validation: error creating test container: %v", err)
 	}
@@ -148,12 +142,12 @@ func (cb *CustomBench) runThread(ctx context.Context, runner driver.Driver, thre
 		// commands are specified in the passed in array; we will need
 		// a container for each set of commands:
 		name := fmt.Sprintf("%s-%d-%d", driver.ContainerNamePrefix, threadNum, i)
-		ctr, err := runner.Create(ctx, name, cb.imageInfo, cb.cmdOverride, true, cb.trace)
+		ctr, createElapsed, err := runner.Create(ctx, name, cb.imageInfo, cb.cmdOverride, true, cb.trace)
 		if err != nil {
 			log.Errorf("Error on creating container %q from image %q: %v", name, cb.imageInfo, err)
 			return
 		}
-
+		durations["create"] = createElapsed
 		// Stats calls must be stopped at the end of current iteration if streaming
 		statsCtx, statsCancel := context.WithCancel(ctx)
 

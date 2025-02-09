@@ -77,7 +77,7 @@ type Driver interface {
 
 	// Create will create a container instance matching the specific needs
 	// of a driver
-	Create(ctx context.Context, name, image, cmdOverride string, detached bool, trace bool) (Container, error)
+	Create(ctx context.Context, name, image, cmdOverride string, detached bool, trace bool) (Container, time.Duration, error)
 
 	// Clean will clean the operating environment of a specific driver
 	Clean(ctx context.Context) error

@@ -251,7 +251,7 @@ func (r *ContainerdDriver) Info(ctx context.Context) (string, error) {
 
 // Create will create a container instance matching the specific needs
 // of a driver
-func (r *ContainerdDriver) Create(ctx context.Context, name, image, cmdOverride string, _ bool, trace bool) (Container, error) {
+func (r *ContainerdDriver) Create(ctx context.Context, name, image, cmdOverride string, _ bool, trace bool) (Container, time.Duration, error) {
 	ctx = namespaces.WithNamespace(ctx, containerdNamespace)
 
 	// we need to convert the bare Docker image name to a fully resolved
@@ -263,11 +263,11 @@ func (r *ContainerdDriver) Create(ctx context.Context, name, image, cmdOverride 
 		// using the reference and default resolver (most likely DockerHub)
 		if _, err := r.client.Pull(ctx, fullImageName, containerd.WithPullUnpack); err != nil {
 			// error pulling the image
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
-	return newContainerdContainer(name, fullImageName, cmdOverride, trace), nil
+	return newContainerdContainer(name, fullImageName, cmdOverride, trace), 0, nil
 }
 
 // Clean will clean the environment; removing any remaining containers in the runc metadata

@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	defaultPodImage        = "registry.k8s.io/pause:3.5"
+	defaultPodImage        = "hub.cloud.ctripcorp.com/k8s-mirror/pause-amd64:3.1"
 	defaultPodNamePrefix   = "pod"
 	defaultSandboxConfig   = "contrib/sandbox_config.json"
 	defaultContainerConfig = "contrib/container_config.json"
@@ -48,6 +48,14 @@ type CRIContainer struct {
 	podID       string
 }
 
+var pconfig pb.PodSandboxConfig
+var cconfig pb.ContainerConfig
+
+func init() {
+	pconfig, _ = loadPodSandboxConfig(defaultSandboxConfig)
+	cconfig, _ = loadContainerConfig(defaultContainerConfig)
+}
+
 // NewCRIDriver creates an instance of the CRI driver
 func NewCRIDriver(path string) (Driver, error) {
 	if path == "" {
@@ -61,16 +69,6 @@ func NewCRIDriver(path string) (Driver, error) {
 
 	runtimeClient := pb.NewRuntimeServiceClient(conn)
 	imageClient := pb.NewImageServiceClient(conn)
-
-	pconfig, err := loadPodSandboxConfig(defaultSandboxConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	cconfig, err := loadContainerConfig(defaultContainerConfig)
-	if err != nil {
-		return nil, err
-	}
 
 	driver := &CRIDriver{
 		criSocketAddress: path,
@@ -156,31 +154,35 @@ func (c *CRIDriver) Path() string {
 
 // Create will create a container instance matching the specific needs
 // of a driver
-func (c *CRIDriver) Create(ctx context.Context, name, image, cmdOverride string, _ bool, trace bool) (Container, error) {
+func (c *CRIDriver) Create(ctx context.Context, name, image, cmdOverride string, _ bool, trace bool) (Container, time.Duration, error) {
 	if status, err := (*c.imageClient).ImageStatus(ctx, &pb.ImageStatusRequest{Image: &pb.ImageSpec{Image: image}}); err != nil || status.Image == nil {
 		if _, err := (*c.imageClient).PullImage(ctx, &pb.PullImageRequest{Image: &pb.ImageSpec{Image: image}}); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
 	if status, err := (*c.imageClient).ImageStatus(ctx, &pb.ImageStatusRequest{Image: &pb.ImageSpec{Image: defaultPodImage}}); err != nil || status.Image == nil {
 		if _, err := (*c.imageClient).PullImage(ctx, &pb.PullImageRequest{Image: &pb.ImageSpec{Image: defaultPodImage}}); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
 	var pconfig pb.PodSandboxConfig
 	err := deepCopy(&pconfig, pconfigGlobal)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	pconfig.Metadata.Name = defaultPodNamePrefix + name
 
+	pconfig.Linux.CgroupParent = "kubepods-burstable-pod" + pconfig.Metadata.Name + ".slice"
+
+	start := time.Now()
+
 	podInfo, err := (*c.runtimeClient).RunPodSandbox(ctx, &pb.RunPodSandboxRequest{Config: &pconfig})
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
+	elapsed := time.Since(start)
 	containerObj := &CRIContainer{
 		name:        name,
 		imageName:   image,
@@ -188,8 +190,8 @@ func (c *CRIDriver) Create(ctx context.Context, name, image, cmdOverride string,
 		trace:       trace,
 		podID:       podInfo.GetPodSandboxId(),
 	}
-
-	return containerObj, nil
+	log.Infof("create sandbox use %+v", elapsed)
+	return containerObj, elapsed, nil
 }
 
 // Clean will clean the operating environment of a specific driver
@@ -240,6 +242,7 @@ func (c *CRIDriver) Run(ctx context.Context, ctr Container) (string, time.Durati
 		return "", 0, err
 	}
 	elapsed := time.Since(start)
+	log.Infof("create container use %+v", elapsed)
 	return "", elapsed, nil
 }
 

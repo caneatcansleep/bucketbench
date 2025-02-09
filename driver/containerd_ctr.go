@@ -154,8 +154,8 @@ func (r *CtrDriver) Info(ctx context.Context) (string, error) {
 
 // Create will create a container instance matching the specific needs
 // of a driver
-func (r *CtrDriver) Create(_ context.Context, name, image, _ string, _ bool, trace bool) (Container, error) {
-	return newCtrContainer(name, image, trace), nil
+func (r *CtrDriver) Create(_ context.Context, name, image, _ string, _ bool, trace bool) (Container, time.Duration, error) {
+	return newCtrContainer(name, image, trace), 0, nil
 }
 
 // Clean will clean the environment; removing any remaining containers in the runc metadata
